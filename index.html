@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>복리 계산기 (Compound Interest Calculator)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>복리 계산기</h1>
+            <p>시간과 복리의 마법으로 자산을 키우세요</p>
+        </header>
+
+        <div class="calculator-grid">
+            <div class="input-section glass-panel">
+                <h2>투자 설정</h2>
+                <div class="input-group">
+                    <label for="initial-investment">초기 투자금 (원)</label>
+                    <input type="text" id="initial-investment" value="10,000,000" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label for="monthly-contribution">월 적립액 (원)</label>
+                    <input type="text" id="monthly-contribution" value="1,000,000" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label for="interest-rate">연 이자율 (%)</label>
+                    <input type="number" id="interest-rate" value="7" step="0.1" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="years">투자 기간 (년)</label>
+                    <input type="number" id="years" value="10" min="1" max="100">
+                </div>
+                <div class="input-group">
+                    <label for="compound-frequency">복리 횟수</label>
+                    <select id="compound-frequency">
+                        <option value="12">매월 (Monthly)</option>
+                        <option value="1">매년 (Yearly)</option>
+                    </select>
+                </div>
+                <button id="calculate-btn">계산하기</button>
+            </div>
+
+            <div class="result-section">
+                <div class="summary-cards">
+                    <div class="card glass-panel">
+                        <h3>최종 금액</h3>
+                        <p class="amount" id="final-balance">0원</p>
+                    </div>
+                    <div class="card glass-panel">
+                        <h3>총 원금</h3>
+                        <p class="amount small" id="total-principal">0원</p>
+                    </div>
+                    <div class="card glass-panel">
+                        <h3>총 이자 수익</h3>
+                        <p class="amount small highlight" id="total-interest">0원</p>
+                    </div>
+                </div>
+
+                <div class="chart-container glass-panel">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-section glass-panel">
+            <h2>연도별 현황</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>연도</th>
+                            <th>총 원금</th>
+                            <th>이자 수익</th>
+                            <th>누적 이자</th>
+                            <th>총 잔액</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdown-body">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

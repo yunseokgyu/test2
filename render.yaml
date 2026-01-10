@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: compound-interest-calculator
+    env: static
+    buildCommand: "" # No build command needed for simple HTML/JS
+    staticPublishPath: ./ # Serve from root
