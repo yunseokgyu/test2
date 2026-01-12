@@ -3,6 +3,27 @@ let growthChart = null;
 
 // Initial Setup and Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Tab Switching Logic
+    const tabs = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => {
+                c.style.display = 'none';
+                c.classList.remove('active');
+            });
+
+            tab.classList.add('active');
+            const targetId = `tab-${tab.dataset.tab}`;
+            const targetContent = document.getElementById(targetId);
+            targetContent.style.display = 'block';
+            setTimeout(() => targetContent.classList.add('active'), 10);
+        });
+    });
+
+    // --- Compound Interest Calculator Logic ---
     // Inputs
     const initialInvestmentInput = document.getElementById('initial-investment');
     const monthlyContributionInput = document.getElementById('monthly-contribution');
@@ -17,13 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add formatting listeners
     currencyInputs.forEach(input => {
-        input.addEventListener('input', (e) => {
-            const rawValue = e.target.value.replace(/[^0-9]/g, '');
-            if (rawValue) {
-                e.target.value = parseInt(rawValue).toLocaleString();
-            }
-            calculateAndRender();
-        });
+        input.addEventListener('input', handleCurrencyInput);
     });
 
     inputs.slice(2).forEach(input => { // Remaining inputs
@@ -32,8 +47,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
     calculateBtn.addEventListener('click', calculateAndRender);
 
-    // Initial calculation
+    // Initial calculation for Compound Calc
     calculateAndRender();
+
+    // --- Stock Yield Calculator Logic ---
+    const stockBuyPriceInput = document.getElementById('stock-buy-price');
+    const stockQuantityInput = document.getElementById('stock-quantity');
+    const feeBuyInput = document.getElementById('fee-buy');
+    const feeSellInput = document.getElementById('fee-sell');
+    const taxRateInput = document.getElementById('tax-rate');
+    const addSplitBtn = document.getElementById('add-split-btn');
+
+    const stockTotalAmountInput = document.getElementById('stock-total-amount-card');
+
+    // New Top Section Inputs
+    const targetReturnRateInput = document.getElementById('target-return-rate');
+    const targetProfitAmountInput = document.getElementById('target-profit-amount');
+
+    // Event Listeners for Stock Inputs
+    stockBuyPriceInput.addEventListener('input', (e) => {
+        handleCurrencyInput(e);
+        syncTotalAmount();
+        syncTargetProfit(); // Ensure target profit updates when total changes
+        calculateStockYield();
+    });
+
+    stockQuantityInput.addEventListener('input', (e) => {
+        handleCurrencyInput(e);
+        syncTotalAmount();
+        syncTargetProfit(); // Ensure target profit updates when total changes
+        calculateStockYield();
+    });
+
+    stockTotalAmountInput.addEventListener('input', (e) => {
+        handleCurrencyInput(e);
+        syncQuantity();
+        calculateStockYield();
+        syncTargetProfit(); // Recalc target profit based on new total
+    });
+
+    // Target Section Listeners
+    targetReturnRateInput.addEventListener('input', () => {
+        syncTargetProfit();
+    });
+
+    targetProfitAmountInput.addEventListener('input', (e) => {
+        handleCurrencyInput(e);
+        syncTargetReturn();
+    });
+
+    [feeBuyInput, feeSellInput, taxRateInput].forEach(input => {
+        input.addEventListener('input', calculateStockYield);
+    });
+
+    addSplitBtn.addEventListener('click', addSplitRow);
+
+    // Initial Calc for Stock
+    calculateStockYield();
+
+    function handleCurrencyInput(e) {
+        const rawValue = e.target.value.replace(/[^0-9]/g, '');
+        if (rawValue) {
+            e.target.value = parseInt(rawValue).toLocaleString();
+        } else {
+            e.target.value = 0;
+        }
+        if (e.target.id.includes('stock')) {
+            calculateStockYield();
+        } else {
+            calculateAndRender();
+        }
+    }
 
     function calculateAndRender() {
         // Parse with comma removal
@@ -353,4 +437,288 @@ function updateChart(data) {
 
 function formatMoney(amount) {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
+}
+
+// --- Stock Yield Calculator Functions ---
+
+function calculateStockYield() {
+    // helpers
+    const getVal = (id) => parseCurrency(document.getElementById(id).value);
+
+    const buyPrice = getVal('stock-buy-price');
+    const quantity = getVal('stock-quantity');
+
+    // Fee Rates (percentages)
+    const buyFeeRate = parseFloat(document.getElementById('fee-buy').value) || 0;
+    const sellFeeRate = parseFloat(document.getElementById('fee-sell').value) || 0;
+    const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+
+    const totalBuyAmount = buyPrice * quantity;
+    const buyFee = Math.floor(totalBuyAmount * (buyFeeRate / 100));
+
+    // Update Buy Summary
+    document.getElementById('stock-total-buy').textContent = formatMoney(totalBuyAmount);
+
+    // Calculate Splits - Aggregation Only
+    // Individual row calculations (Bidirectional) are handled by input events now.
+    // However, we still need to sum up everything for the summary cards.
+    // And if global 'calculateStockYield' is called (e.g. by modifying Buy Price), we need to update rows?
+    // YES. If Buy Price changes, Profit remains constant? Or Return remains constant?
+    // Usually Return % remains constant if you just changed buy price basics? 
+    // Let's assume Target Return % is the anchor when Buy Price changes.
+    // So we re-calculate Profit based on the current Return % in the input.
+
+    const splitRows = document.querySelectorAll('#split-body tr');
+    let totalSellAmount = 0;
+    let totalSellQty = 0;
+    let totalExpectedProfit = 0;
+
+    splitRows.forEach(row => {
+        const ratioInput = row.querySelector('.split-ratio');
+        const profitInput = row.querySelector('.split-profit-input');
+        const returnInput = row.querySelector('.split-return-input');
+        const sellPriceCell = row.querySelector('.split-sell-price');
+        const sellQtyCell = row.querySelector('.split-sell-qty');
+
+        const ratio = parseFloat(ratioInput.value) || 0;
+        const splitQty = Math.floor(quantity * (ratio / 100));
+
+        // We use the current Return % value to derive everything else during a full re-calc
+        // (e.g. when Quantity or Buy Price changes). 
+        // If the user *just* typed in Profit, the Profit Event Listener would have updated Return %.
+
+        let targetReturn = parseFloat(returnInput.value) || 0;
+
+        // Calculate Sell Price based on Return %
+        const targetSellPrice = buyPrice * (1 + targetReturn / 100);
+
+        // Update display
+        sellPriceCell.textContent = formatMoney(targetSellPrice);
+        sellQtyCell.textContent = splitQty.toLocaleString() + '주';
+
+        // Calculate Profit based on this Sell Price
+        const splitSellAmt = targetSellPrice * splitQty;
+        const splitSellFee = splitSellAmt * (sellFeeRate / 100);
+        const splitSellTax = splitSellAmt * (taxRate / 100);
+        const splitBuyAmt = buyPrice * splitQty;
+        const splitBuyFee = splitBuyAmt * (buyFeeRate / 100);
+
+        const netProfit = splitSellAmt - splitSellFee - splitSellTax - splitBuyAmt - splitBuyFee;
+
+        // Sync Profit Input (only if not focused to avoid fighting user input)
+        if (document.activeElement !== profitInput) {
+            profitInput.value = Math.round(netProfit); // Raw number for input
+        }
+
+        totalSellAmount += splitSellAmt;
+        totalSellQty += splitQty;
+        totalExpectedProfit += netProfit;
+    });
+
+    // Update Split Summary
+    let avgReturn = 0;
+    if (totalBuyAmount > 0) {
+        // Avg Return = Total Profit / Total Investment Cost
+        const totalCost = totalBuyAmount + buyFee; // Should include fee? Usually yes for ROI.
+        avgReturn = (totalExpectedProfit / totalCost) * 100;
+    }
+
+    document.getElementById('avg-return-rate').textContent = avgReturn.toFixed(2) + '%';
+    const totalProfitEl = document.getElementById('total-expected-profit');
+    totalProfitEl.textContent = formatMoney(totalExpectedProfit);
+    totalProfitEl.style.color = totalExpectedProfit >= 0 ? 'var(--accent-color)' : '#ef4444';
+
+    // Update Main Result Cards
+    document.getElementById('stock-total-sell').textContent = formatMoney(totalSellAmount);
+
+    const netProfitEl = document.getElementById('stock-net-profit');
+    netProfitEl.textContent = formatMoney(totalExpectedProfit);
+    netProfitEl.style.color = totalExpectedProfit >= 0 ? 'var(--accent-color)' : '#ef4444';
+
+    const returnRateEl = document.getElementById('stock-return-rate');
+    returnRateEl.textContent = avgReturn.toFixed(2) + '%';
+    returnRateEl.style.color = avgReturn >= 0 ? 'var(--accent-color)' : '#ef4444';
+}
+
+function addSplitRow() {
+    const tbody = document.getElementById('split-body');
+    const tr = document.createElement('tr');
+    // New Structure: [Ratio] [Profit Input] [Price] [Qty] [Return Input] [Delete]
+    tr.innerHTML = `
+        <td><input type="number" class="split-ratio" value="50" step="10"></td>
+        <td><input type="number" class="split-profit-input" value="0"></td>
+        <td class="split-sell-price">-</td>
+        <td class="split-sell-qty">-</td>
+        <td><input type="number" class="split-return-input" value="10" step="0.1"></td>
+        <td><button class="btn-delete" onclick="this.closest('tr').remove(); calculateStockYield()">×</button></td>
+    `;
+
+    const profitInput = tr.querySelector('.split-profit-input');
+    const returnInput = tr.querySelector('.split-return-input');
+    const ratioInput = tr.querySelector('.split-ratio');
+
+    // Profit Input Listener: Updates Return %
+    profitInput.addEventListener('input', (e) => {
+        const profit = parseFloat(e.target.value) || 0;
+        const buyPrice = parseCurrency(document.getElementById('stock-buy-price').value);
+        const quantity = parseCurrency(document.getElementById('stock-quantity').value);
+        const ratio = parseFloat(ratioInput.value) || 0;
+        const splitQty = Math.floor(quantity * (ratio / 100));
+
+        if (splitQty <= 0 || buyPrice <= 0) return;
+
+        const buyFeeRate = parseFloat(document.getElementById('fee-buy').value) || 0;
+        const sellFeeRate = parseFloat(document.getElementById('fee-sell').value) || 0;
+        const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+
+        // Reverse Calc: 
+        // Profit = (SellPrice * Qty) - SellFees - BuyCosts
+        // Profit + BuyCosts = SellPrice * Qty * (1 - TotalSellRate)
+        // SellPrice = (Profit + BuyCosts) / (Qty * (1 - TotalSellRate))
+
+        const splitBuyAmt = buyPrice * splitQty;
+        const splitBuyFee = splitBuyAmt * (buyFeeRate / 100);
+        const totalBuyCost = splitBuyAmt + splitBuyFee;
+
+        const totalSellRate = (sellFeeRate + taxRate) / 100;
+        const targetSellPrice = (profit + totalBuyCost) / (splitQty * (1 - totalSellRate));
+
+        const returnRate = ((targetSellPrice - buyPrice) / buyPrice) * 100;
+
+        returnInput.value = returnRate.toFixed(2);
+
+        // Recalc everything else (Summaries)
+        calculateStockYield();
+    });
+
+    // Return Input Listener: Updates Profit (Standard logic)
+    returnInput.addEventListener('input', (e) => {
+        calculateStockYield();
+    });
+
+    ratioInput.addEventListener('input', calculateStockYield);
+
+    tbody.appendChild(tr);
+    calculateStockYield();
+}
+function parseCurrency(str) {
+    if (!str) return 0;
+    if (typeof str === 'number') return str;
+    return parseFloat(str.replace(/[^0-9.-]+/g, "")) || 0;
+}
+
+function syncTotalAmount() {
+    const buyPriceInput = document.getElementById('stock-buy-price');
+    const quantityInput = document.getElementById('stock-quantity');
+    const totalAmountInput = document.getElementById('stock-total-amount-card');
+
+    const price = parseCurrency(buyPriceInput.value);
+    const qty = parseCurrency(quantityInput.value);
+    const total = price * qty;
+    totalAmountInput.value = total.toLocaleString();
+}
+
+function syncQuantity() {
+    const buyPriceInput = document.getElementById('stock-buy-price');
+    const quantityInput = document.getElementById('stock-quantity');
+    const totalAmountInput = document.getElementById('stock-total-amount-card');
+
+    const price = parseCurrency(buyPriceInput.value);
+    const total = parseCurrency(totalAmountInput.value);
+    if (price > 0) {
+        const qty = Math.floor(total / price);
+        quantityInput.value = qty.toLocaleString();
+    }
+}
+
+function syncTargetProfit() {
+    const totalInput = document.getElementById('stock-total-amount-card');
+    const rateInput = document.getElementById('target-return-rate');
+    const profitInput = document.getElementById('target-profit-amount');
+
+    // Safety check if elements exist (in case of layout changes)
+    if (!totalInput || !rateInput || !profitInput) return;
+
+    const total = parseCurrency(totalInput.value);
+    const rate = parseFloat(rateInput.value) || 0;
+
+    // Profit Logic: 
+    // Uses Buy Price/Qty if available for exact fee calc, otherwise approximation.
+    const buyPrice = parseCurrency(document.getElementById('stock-buy-price').value);
+    const quantity = parseCurrency(document.getElementById('stock-quantity').value);
+
+    if (buyPrice > 0 && quantity > 0) {
+        const buyFeeRate = parseFloat(document.getElementById('fee-buy').value) || 0;
+        const sellFeeRate = parseFloat(document.getElementById('fee-sell').value) || 0;
+        const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+
+        const targetSellPrice = buyPrice * (1 + rate / 100);
+
+        const totalBuyAmt = buyPrice * quantity;
+        const totalSellAmt = targetSellPrice * quantity;
+
+        const buyFee = totalBuyAmt * (buyFeeRate / 100);
+        const sellFee = totalSellAmt * (sellFeeRate / 100);
+        const sellTax = totalSellAmt * (taxRate / 100);
+
+        const netProfit = totalSellAmt - totalBuyAmt - buyFee - sellFee - sellTax;
+
+        profitInput.value = Math.round(netProfit).toLocaleString();
+    } else {
+        // Fallback approximation if no qty details
+        if (total > 0) {
+            const approxProfit = total * (rate / 100);
+            profitInput.value = Math.round(approxProfit).toLocaleString();
+        } else {
+            profitInput.value = '0';
+        }
+    }
+}
+
+function syncTargetReturn() {
+    const totalInput = document.getElementById('stock-total-amount-card');
+    const rateInput = document.getElementById('target-return-rate');
+    const profitInput = document.getElementById('target-profit-amount');
+
+    if (!totalInput || !rateInput || !profitInput) return;
+
+    const total = parseCurrency(totalInput.value);
+    const profit = parseCurrency(profitInput.value);
+
+    if (total <= 0) return;
+
+    const buyPrice = parseCurrency(document.getElementById('stock-buy-price').value);
+    const quantity = parseCurrency(document.getElementById('stock-quantity').value);
+
+    if (buyPrice > 0 && quantity > 0) {
+        const buyFeeRate = parseFloat(document.getElementById('fee-buy').value) || 0;
+        const sellFeeRate = parseFloat(document.getElementById('fee-sell').value) || 0;
+        const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+
+        const totalBuyAmt = buyPrice * quantity;
+        const buyFee = totalBuyAmt * (buyFeeRate / 100);
+        const totalBuyCost = totalBuyAmt + buyFee;
+
+        const totalSellRate = (sellFeeRate + taxRate) / 100;
+
+        // Algebra: Profit + MakeWholeCost = SellAmt * (1 - TotalSellFeeRate)
+        // SellAmt = (Profit + TotalBuyCost) / (1 - TotalSellFeeRate)
+        // But need to be careful of denominator 0 if fees are 100% (unlikely).
+
+        let targetSellAmt = 0;
+        if (1 - totalSellRate > 0.0001) {
+            targetSellAmt = (profit + totalBuyCost) / (1 - totalSellRate);
+        } else {
+            targetSellAmt = 0; // Error or massive fees
+        }
+
+        const targetSellPrice = targetSellAmt / quantity;
+        const returnRate = ((targetSellPrice - buyPrice) / buyPrice) * 100;
+
+        rateInput.value = returnRate.toFixed(2);
+    } else {
+        // Approximate
+        const rate = (profit / total) * 100;
+        rateInput.value = rate.toFixed(2);
+    }
 }

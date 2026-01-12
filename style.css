@@ -3,7 +3,8 @@
     --card-bg: rgba(30, 41, 59, 0.7);
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
-    --accent-color: #34d399; /* Neon Green/Emerald */
+    --accent-color: #34d399;
+    /* Neon Green/Emerald */
     --accent-hover: #10b981;
     --glass-border: rgba(255, 255, 255, 0.1);
     --input-bg: rgba(15, 23, 42, 0.6);
@@ -22,7 +23,7 @@ body {
     line-height: 1.6;
     padding: 2rem;
     min-height: 100vh;
-    background-image: 
+    background-image:
         radial-gradient(circle at 10% 20%, rgba(52, 211, 153, 0.1) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 20%);
 }
@@ -69,6 +70,19 @@ header p {
 
 @media (max-width: 900px) {
     .calculator-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.input-row-three {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    align-items: end;
+}
+
+@media (max-width: 600px) {
+    .input-row-three {
         grid-template-columns: 1fr;
     }
 }
@@ -191,13 +205,15 @@ table {
     font-size: 0.95rem;
 }
 
-th, td {
+th,
+td {
     padding: 1rem;
     text-align: right;
     border-bottom: 1px solid var(--glass-border);
 }
 
-th:first-child, td:first-child {
+th:first-child,
+td:first-child {
     text-align: left;
 }
 
@@ -208,4 +224,33 @@ th {
 
 tr:hover {
     background: rgba(255, 255, 255, 0.03);
+}
+
+/* Card Input Styles */
+.card-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    outline: none;
+    padding: 0;
+}
+
+.card-input:focus {
+    border-bottom: 2px solid var(--accent-color);
+}
+
+/* Hide number arrows for chrome/safari/edge */
+.card-input::-webkit-outer-spin-button,
+.card-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.card-input[type=number] {
+    -moz-appearance: textfield;
 }

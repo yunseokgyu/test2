@@ -1,0 +1,167 @@
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: auto;
+    margin-top: 0;
+}
+
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background: var(--accent-color);
+    color: #0f172a;
+    font-weight: 600;
+    border-color: var(--accent-color);
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stock Calculator Styles */
+.section-divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 1.5rem 0;
+}
+
+.input-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.input-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.input-group.half {
+    width: 50%;
+}
+
+.sub-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Split Sell Section */
+.split-sell-section {
+    margin-top: 2rem;
+}
+
+.split-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.split-header h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0;
+}
+
+.small-btn {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    margin-top: 0;
+}
+
+#split-table {
+    width: 100%;
+    min-width: 600px;
+}
+
+#split-table th {
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 0.75rem;
+}
+
+#split-table td {
+    padding: 0.75rem;
+    text-align: center;
+}
+
+#split-table input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 0.4rem;
+    color: var(--text-primary);
+    width: 100%;
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+#split-table input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.btn-delete {
+    background: transparent;
+    color: #ef4444;
+    /* Red color */
+    padding: 0.25rem;
+    width: auto;
+    margin-top: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.btn-delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+    transform: scale(1.1);
+}
+
+.split-summary {
+    display: flex;
+    justify-content: flex-end;
+    gap: 2rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.split-summary p {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.split-summary .highlight {
+    color: var(--accent-color);
+}
