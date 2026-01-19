@@ -487,7 +487,7 @@ function calculateStockYield() {
         // (e.g. when Quantity or Buy Price changes). 
         // If the user *just* typed in Profit, the Profit Event Listener would have updated Return %.
 
-        let targetReturn = parseFloat(returnInput.value) || 0;
+        targetReturn = parseFloat(returnInput.value) || 0;
 
         // Calculate Sell Price based on Return %
         const targetSellPrice = buyPrice * (1 + targetReturn / 100);

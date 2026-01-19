@@ -882,7 +882,7 @@
                 const splitCost = splitBuyAmt + splitBuyFee;
                 const totalSellRate = (sellFeeRate + taxRate) / 100;
 
-                let targetReturn = parseFloat(returnInput.value) || 0;
+                targetReturn = parseFloat(returnInput.value) || 0;
 
                 // Calculate Sell Price based on ROI (Return % is Net Profit / Total Cost)
                 // NetProfit = Cost * (ROI / 100)
